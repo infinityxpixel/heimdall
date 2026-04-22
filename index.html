@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Heimdall | OSINT Framework</title>
+    <title>Heimdall Intelligence | Professional OSINT Suite</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -15,7 +15,7 @@
             --accent: #6366f1;
             --text-primary: #f8fafc;
             --text-secondary: #94a3b8;
-            --border: rgba(255, 255, 255, 0.06);
+            --border: rgba(255, 255, 255, 0.08);
         }
 
         body {
@@ -31,7 +31,9 @@
             background: var(--bg-surface);
             border: 1px solid var(--border);
             border-radius: 16px;
+            transition: border 0.3s ease;
         }
+        .h-card:hover { border-color: rgba(99, 102, 241, 0.3); }
 
         @media (max-width: 768px) {
             .sidebar { display: none; }
@@ -58,7 +60,9 @@
             color: var(--text-primary) !important;
             border-radius: 12px !important;
             font-size: 14px !important;
+            outline: none !important;
         }
+        input:focus, select:focus { border-color: var(--accent) !important; }
 
         .panel-content {
             display: none;
@@ -78,12 +82,14 @@
             transition: all 0.2s;
             box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
         }
-        .btn-action:active { transform: scale(0.95); }
+        .btn-action:active { transform: scale(0.97); }
 
         .btn-secondary {
             background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border);
+            transition: all 0.2s;
         }
+        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
 
         ::-webkit-scrollbar { width: 4px; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
@@ -119,7 +125,13 @@
     <main class="flex-1 flex flex-col overflow-hidden relative">
         <header class="hidden md:flex h-14 border-b border-[#1a1a1e] items-center justify-between px-10 bg-[#0a0a0c]/80 backdrop-blur-xl z-10">
             <div id="panel-title" class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-500">Search</div>
-            <button onclick="clearAllData()" class="text-slate-600 hover:text-red-400 text-xs">RESET CASE</button>
+            <div class="flex items-center gap-6">
+                <div id="status-indicator" class="flex items-center gap-2">
+                    <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                    <span class="text-[9px] font-bold text-slate-500 uppercase">System Ready</span>
+                </div>
+                <button onclick="clearAllData()" class="text-slate-600 hover:text-red-400 text-xs font-bold">RESET SESSION</button>
+            </div>
         </header>
 
         <div id="main-scroll" class="flex-1 overflow-y-auto p-4 md:p-10">
@@ -128,15 +140,18 @@
                 <!-- SEARCH PANEL -->
                 <div id="panel-general" class="panel-content space-y-6">
                     <div class="h-card p-6 space-y-4">
-                        <h2 class="text-sm font-bold uppercase tracking-wider">Deep Spectrum Search</h2>
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-sm font-bold uppercase tracking-wider">Multi-Source Discovery</h2>
+                            <i class="fas fa-satellite-dish text-indigo-500 text-xs opacity-50"></i>
+                        </div>
                         <div class="flex flex-col gap-3">
-                            <input type="text" id="global-input" placeholder="Name, Alias, or EU Entity..." class="w-full px-4 py-3">
+                            <input type="text" id="global-input" placeholder="Entity name, unique alias, or company registration..." class="w-full px-4 py-3">
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <button onclick="runSpectrumSearch()" class="btn-action py-3 rounded-xl text-xs uppercase col-span-full">Execute Global Scan</button>
-                                <button onclick="openTarget('https://www.qwant.com/?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">QWANT</button>
-                                <button onclick="openTarget('https://www.mojeek.com/search?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">MOJEEK</button>
-                                <button onclick="openTarget('https://duckduckgo.com/?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">DDG</button>
-                                <button onclick="openTarget('https://yandex.com/search/?text=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">YANDEX</button>
+                                <button onclick="runSpectrumSearch()" class="btn-action py-3 rounded-xl text-xs uppercase col-span-full">Initialize Global Scan</button>
+                                <button onclick="openTarget('https://www.qwant.com/?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold uppercase">Qwant</button>
+                                <button onclick="openTarget('https://www.mojeek.com/search?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold uppercase">Mojeek</button>
+                                <button onclick="openTarget('https://search.brave.com/search?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold uppercase">Brave</button>
+                                <button onclick="openTarget('https://yandex.com/search/?text=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold uppercase">Yandex</button>
                             </div>
                         </div>
                     </div>
@@ -145,16 +160,19 @@
                 <!-- EMAIL PANEL -->
                 <div id="panel-email" class="panel-content space-y-6">
                     <div class="h-card p-6 space-y-4">
-                        <h2 class="text-sm font-bold uppercase tracking-wider">Email Intelligence</h2>
+                        <h2 class="text-sm font-bold uppercase tracking-wider">Electronic Mail Forensics</h2>
                         <div class="flex flex-col gap-3">
-                            <input type="text" id="email-input" placeholder="target@domain.com" class="w-full px-4 py-3">
+                            <input type="text" id="email-input" placeholder="target.person@corporate.eu" class="w-full px-4 py-3">
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <button onclick="openEmail('hunter')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">HUNTER.IO</button>
-                                <button onclick="openEmail('eon')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">EPIOS (EON)</button>
-                                <button onclick="openEmail('hole')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">EMAILHIPPO</button>
+                                <button onclick="openEmail('hunter')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">HUNTER</button>
+                                <button onclick="openEmail('eon')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">EPIEOS</button>
+                                <button onclick="openEmail('leakcheck')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">LEAKCHECK</button>
                                 <button onclick="openEmail('pwned')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">HIBP</button>
                             </div>
-                            <button onclick="runEmailDiscovery()" class="btn-action py-3 rounded-xl text-xs uppercase">Run Breach & Leak Scan</button>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+                                <button onclick="runEmailDiscovery()" class="btn-action py-3 rounded-xl text-xs uppercase">Deep Discovery</button>
+                                <button onclick="emailDorkSearch()" class="btn-secondary py-3 rounded-xl text-xs uppercase font-bold border-indigo-500/20">File-Based Email Dork</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -162,40 +180,82 @@
                 <!-- DORKING PANEL -->
                 <div id="panel-dorks" class="panel-content space-y-6">
                     <div class="h-card p-6 space-y-6">
-                        <h2 class="text-sm font-bold uppercase tracking-wider">Dork Constructor</h2>
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-sm font-bold uppercase tracking-wider">Advanced Dork Constructor</h2>
+                            <span class="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[8px] font-bold rounded uppercase">Logic v2.4</span>
+                        </div>
                         <div class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="space-y-2">
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Operator</label>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Logical Operator</label>
                                     <select id="dork-operator" class="w-full px-4 py-2">
-                                        <option value="site:">site: (Specific domain)</option>
-                                        <option value="filetype:">filetype: (pdf, xls, doc)</option>
-                                        <option value="intext:">intext: (Text in body)</option>
-                                        <option value="intitle:">intitle: (Page title)</option>
-                                        <option value="inurl:">inurl: (String in URL)</option>
-                                        <option value="cache:">cache: (Google cache)</option>
-                                        <option value='ext:'>ext: (Extension)</option>
+                                        <optgroup label="Standard">
+                                            <option value="site:">site: (Domain Limit)</option>
+                                            <option value="filetype:">filetype: (Extension)</option>
+                                            <option value="intext:">intext: (Body Text)</option>
+                                            <option value="intitle:">intitle: (Page Title)</option>
+                                            <option value="inurl:">inurl: (URL String)</option>
+                                        </optgroup>
+                                        <optgroup label="Advanced">
+                                            <option value="allintext:">allintext: (Strict Text Search)</option>
+                                            <option value="allinurl:">allinurl: (Strict URL Search)</option>
+                                            <option value="link:">link: (Linking to Target)</option>
+                                            <option value="cache:">cache: (Indexed Version)</option>
+                                            <option value="related:">related: (Similar Sites)</option>
+                                        </optgroup>
+                                        <optgroup label="Temporal">
+                                            <option value="after:">after: (YYYY-MM-DD)</option>
+                                            <option value="before:">before: (YYYY-MM-DD)</option>
+                                        </optgroup>
                                     </select>
                                 </div>
                                 <div class="space-y-2">
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Value / Argument</label>
-                                    <input type="text" id="dork-value" placeholder="e.g. gov.uk or 'confidential'" class="w-full px-4 py-2">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Argument</label>
+                                    <input type="text" id="dork-value" placeholder="Query data..." class="w-full px-4 py-2">
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="addDorkPart()" class="flex-1 btn-secondary py-2 rounded-lg text-xs uppercase font-bold text-indigo-400">Append Operator</button>
-                                <button onclick="clearDork()" class="px-4 btn-secondary rounded-lg"><i class="fas fa-undo"></i></button>
+                                <button onclick="addDorkPart()" class="flex-1 btn-secondary py-2 rounded-lg text-xs uppercase font-bold text-indigo-400">Add to Chain</button>
+                                <button onclick="clearDork()" class="px-4 btn-secondary rounded-lg text-slate-500"><i class="fas fa-eraser"></i></button>
                             </div>
                             <div class="space-y-2">
-                                <label class="text-[10px] font-bold text-slate-500 uppercase">Final Query</label>
-                                <textarea id="dork-query" class="w-full h-24 p-4 mono text-xs" placeholder="Select operators above or type manually..."></textarea>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase">Constructed Command</label>
+                                <textarea id="dork-query" class="w-full h-24 p-4 mono text-xs leading-relaxed" placeholder="Select operators above to build your dork..."></textarea>
                             </div>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                                 <button onclick="runDork('google')" class="btn-action py-3 rounded-xl text-[10px] uppercase">Google</button>
                                 <button onclick="runDork('bing')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">Bing</button>
                                 <button onclick="runDork('yandex')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">Yandex</button>
-                                <button onclick="runDork('duck')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">DDG</button>
+                                <button onclick="runDork('duck')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">DuckDuckGo</button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NETWORK PANEL -->
+                <div id="panel-network" class="panel-content space-y-6">
+                    <div class="h-card p-6">
+                        <h2 class="text-sm font-bold uppercase mb-4 tracking-wider">Infrastructure & DNS</h2>
+                        <input type="text" id="network-input" placeholder="target-domain.com or IP address" class="w-full px-4 py-3 mb-4">
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <button onclick="openNet('dnsdump')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
+                                <i class="fas fa-project-diagram text-indigo-400 text-lg"></i> DNS DUMPSTER
+                            </button>
+                            <button onclick="openNet('crt')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
+                                <i class="fas fa-certificate text-indigo-400 text-lg"></i> CERT SEARCH
+                            </button>
+                            <button onclick="openNet('shodan')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
+                                <i class="fas fa-search text-indigo-400 text-lg"></i> SHODAN IO
+                            </button>
+                            <button onclick="openNet('builtwith')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
+                                <i class="fas fa-microchip text-indigo-400 text-lg"></i> BUILTWITH
+                            </button>
+                            <button onclick="openNet('ripe')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
+                                <i class="fas fa-network-wired text-indigo-400 text-lg"></i> RIPE WHOIS
+                            </button>
+                            <button onclick="openNet('securitytrails')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
+                                <i class="fas fa-shield-alt text-indigo-400 text-lg"></i> SEC TRAILS
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -204,31 +264,12 @@
                 <div id="panel-geo" class="panel-content space-y-6">
                     <div class="h-card p-6 space-y-4">
                         <h2 class="text-sm font-bold uppercase tracking-wider">Geospatial Intelligence</h2>
-                        <input type="text" id="geo-input" placeholder="City, Postcode, or Coords" class="w-full px-4 py-3">
+                        <input type="text" id="geo-input" placeholder="Search coords, address, or landmark..." class="w-full px-4 py-3">
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
                             <button onclick="openGeo('geoportail')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">GEOPORTAIL (FR)</button>
-                            <button onclick="openGeo('atlas_be')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">ATLAS (BE)</button>
-                            <button onclick="openGeo('osm')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">OSM</button>
+                            <button onclick="openGeo('osm')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">OPENSTREETMAP</button>
                             <button onclick="openGeo('sentinel')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">SENTINEL HUB</button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- NETWORK PANEL -->
-                <div id="panel-network" class="panel-content space-y-6">
-                    <div class="h-card p-6">
-                        <h2 class="text-sm font-bold uppercase mb-4 tracking-wider">Infrastructure Analysis</h2>
-                        <input type="text" id="network-input" placeholder="domain.eu or IP" class="w-full px-4 py-3 mb-4">
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            <button onclick="openNet('ripe')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center">
-                                <i class="fas fa-database text-indigo-400 text-lg"></i> RIPE NCC
-                            </button>
-                            <button onclick="openNet('whois_eu')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center">
-                                <i class="fas fa-flag-eu text-indigo-400 text-lg"></i> EURID WHOIS
-                            </button>
-                            <button onclick="openNet('shodan')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center">
-                                <i class="fas fa-search text-indigo-400 text-lg"></i> SHODAN
-                            </button>
+                            <button onclick="openGeo('wikimapia')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">WIKIMAPIA</button>
                         </div>
                     </div>
                 </div>
@@ -237,21 +278,24 @@
                 <div id="panel-workspace" class="panel-content space-y-6">
                     <div class="h-card p-6">
                         <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-sm font-bold uppercase">Case Journal</h2>
+                            <h2 class="text-sm font-bold uppercase">Case Intelligence Journal</h2>
                             <span id="char-count" class="mono text-[10px] text-slate-500">000000</span>
                         </div>
-                        <textarea id="case-notes" class="w-full h-64 p-4 text-sm mono" placeholder="Document intel chain..."></textarea>
+                        <textarea id="case-notes" class="w-full h-64 p-4 text-sm mono leading-relaxed" placeholder="Initial findings, pivot points, and analysis notes..."></textarea>
                     </div>
                     <div class="h-card p-6">
                         <h2 class="text-sm font-bold uppercase mb-4 tracking-wider">Evidence Vault</h2>
-                        <div class="flex gap-2 mb-4">
-                            <input type="text" id="vault-input" placeholder="Paste URL source for preservation..." class="flex-1 px-4 py-2">
-                            <button onclick="addVaultLink()" class="btn-action px-6 rounded-xl text-xs font-bold">ADD SOURCE</button>
+                        <div class="space-y-3 mb-6">
+                            <input type="text" id="vault-input" placeholder="Evidence Source URL..." class="w-full px-4 py-2">
+                            <div class="flex gap-2">
+                                <input type="text" id="vault-label" placeholder="Note (e.g. 'Leaked PDF', 'Linked Profile')" class="flex-1 px-4 py-2">
+                                <button onclick="addVaultLink()" class="btn-action px-6 rounded-xl text-[10px] font-bold">LOG SOURCE</button>
+                            </div>
                         </div>
                         <ul id="link-list" class="space-y-2">
                             <!-- Links render here -->
                         </ul>
-                        <button onclick="exportWorkspace()" class="w-full mt-6 btn-action py-3 rounded-xl text-xs uppercase">Export Intel Package</button>
+                        <button onclick="exportWorkspace()" class="w-full mt-6 btn-action py-3 rounded-xl text-xs uppercase font-extrabold tracking-widest">Finalize & Export Intel Package</button>
                     </div>
                 </div>
 
@@ -284,16 +328,16 @@
             updateClock();
             setInterval(updateClock, 1000);
             
-            const savedNotes = localStorage.getItem('h_notes');
+            const savedNotes = localStorage.getItem('h_notes_v2');
             if (savedNotes) {
                 document.getElementById('case-notes').value = savedNotes;
                 updateCharCount(savedNotes.length);
             }
-            state.links = JSON.parse(localStorage.getItem('h_links') || '[]');
+            state.links = JSON.parse(localStorage.getItem('h_links_v2') || '[]');
             renderLinks();
 
             document.getElementById('case-notes').addEventListener('input', e => {
-                localStorage.setItem('h_notes', e.target.value);
+                localStorage.setItem('h_notes_v2', e.target.value);
                 updateCharCount(e.target.value.length);
             });
 
@@ -352,9 +396,9 @@
 
         function runSpectrumSearch() {
             const val = document.getElementById('global-input').value.trim();
-            if (!val) return notify('Input required', true);
+            if (!val) return notify('Target required', true);
             const urls = [
-                `https://www.google.com/search?q=${encodeURIComponent(val)}&gl=be`,
+                `https://www.google.com/search?q=${encodeURIComponent(val)}`,
                 `https://www.qwant.com/?q=${encodeURIComponent(val)}`,
                 `https://www.mojeek.com/search?q=${encodeURIComponent(val)}`,
                 `https://yandex.com/search/?text=${encodeURIComponent(val)}`
@@ -368,7 +412,7 @@
             const map = {
                 hunter: `https://hunter.io/email-verifier/${val}`,
                 eon: `https://epieos.com/?q=${val}`,
-                hole: `https://www.emailhippo.com/`,
+                leakcheck: `https://leakcheck.io/search?type=email&query=${val}`,
                 pwned: `https://haveibeenpwned.com/account/${val}`
             };
             window.open(map[type], '_blank');
@@ -379,13 +423,19 @@
             if(!val) return notify('Email required', true);
             window.open(`https://intelx.io/?s=${val}`, '_blank');
             window.open(`https://dehashed.com/search?query=${val}`, '_blank');
-            window.open(`https://www.google.com/search?q=\"${val}\"`, '_blank');
+        }
+
+        function emailDorkSearch() {
+            const val = document.getElementById('email-input').value.trim();
+            if(!val) return notify('Email required', true);
+            const dork = `filetype:pdf OR filetype:xls OR filetype:doc "${val}"`;
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(dork)}`, '_blank');
         }
 
         function addDorkPart() {
             const op = document.getElementById('dork-operator').value;
             const val = document.getElementById('dork-value').value.trim();
-            if(!val) return notify('Operator value required', true);
+            if(!val) return notify('Value required', true);
             const d = document.getElementById('dork-query');
             d.value += (d.value ? ' ' : '') + op + val;
             document.getElementById('dork-value').value = '';
@@ -395,9 +445,9 @@
 
         function runDork(engine) {
             const q = document.getElementById('dork-query').value.trim();
-            if(!q) return notify('No query built', true);
+            if(!q) return notify('Build a query first', true);
             const urls = {
-                google: `https://www.google.com/search?q=${encodeURIComponent(q)}&gl=be`,
+                google: `https://www.google.com/search?q=${encodeURIComponent(q)}`,
                 bing: `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
                 yandex: `https://yandex.com/search/?text=${encodeURIComponent(q)}`,
                 duck: `https://duckduckgo.com/?q=${encodeURIComponent(q)}`
@@ -410,9 +460,9 @@
             if(!val) return notify('Location required', true);
             const map = {
                 geoportail: `https://www.geoportail.gouv.fr/carte?q=${val}`,
-                atlas_be: `https://www.topomapviewer.be/`,
                 osm: `https://www.openstreetmap.org/search?query=${val}`,
-                sentinel: `https://apps.sentinel-hub.com/eo-browser/`
+                sentinel: `https://apps.sentinel-hub.com/eo-browser/`,
+                wikimapia: `http://wikimapia.org/#search=${val}`
             };
             window.open(map[type], '_blank');
         }
@@ -421,24 +471,30 @@
             const val = document.getElementById('network-input').value.trim();
             if(!val) return notify('Target required', true);
             const map = {
+                dnsdump: `https://dnsdumpster.com/?target=${val}`,
+                crt: `https://crt.sh/?q=${val}`,
+                shodan: `https://www.shodan.io/search?query=${val}`,
+                builtwith: `https://builtwith.com/${val}`,
                 ripe: `https://apps.db.ripe.net/db-web-ui/query?searchtext=${val}`,
-                whois_eu: `https://whois.eurid.eu/en/?domain=${val}`,
-                shodan: `https://www.shodan.io/search?query=${val}`
+                securitytrails: `https://securitytrails.com/domain/${val}`
             };
             window.open(map[type], '_blank');
         }
 
-        // Vault Logic
         function addVaultLink() {
             const input = document.getElementById('vault-input');
+            const labelInput = document.getElementById('vault-label');
             const url = input.value.trim();
-            if (!url) return notify('No URL to add', true);
+            const label = labelInput.value.trim() || 'No description provided';
             
-            state.links.unshift({ url: url, ts: new Date().toISOString() });
+            if (!url) return notify('URL required', true);
+            
+            state.links.unshift({ url, label, ts: new Date().toISOString() });
             input.value = '';
+            labelInput.value = '';
             saveLinks();
             renderLinks();
-            notify('Evidence added to vault');
+            notify('Preserved in vault');
         }
 
         function removeVaultLink(idx) {
@@ -450,23 +506,24 @@
         function renderLinks() {
             const l = document.getElementById('link-list');
             if (state.links.length === 0) {
-                l.innerHTML = `<li class="text-[10px] text-slate-600 text-center py-4 uppercase tracking-tighter">No sources preserved in vault</li>`;
+                l.innerHTML = `<li class="text-[10px] text-slate-600 text-center py-6 uppercase tracking-widest opacity-50">Empty Archive</li>`;
                 return;
             }
             l.innerHTML = state.links.map((link, idx) => `
-                <li class="bg-[#1a1a1e] p-3 rounded-xl border border-white/5 flex justify-between items-center group">
+                <li class="bg-[#1a1a1e] p-3 rounded-xl border border-white/5 flex justify-between items-start group">
                     <div class="truncate flex-1">
-                        <a href="${link.url}" target="_blank" class="text-[10px] mono text-indigo-400 underline decoration-indigo-500/30 truncate block">${link.url}</a>
-                        <div class="text-[8px] text-slate-600 mono mt-1">${link.ts}</div>
+                        <div class="text-[9px] font-bold text-indigo-400 uppercase tracking-tighter mb-0.5">${link.label}</div>
+                        <a href="${link.url}" target="_blank" class="text-[10px] mono text-slate-400 underline decoration-indigo-500/30 truncate block">${link.url}</a>
+                        <div class="text-[7px] text-slate-600 mono mt-1 uppercase">${link.ts}</div>
                     </div>
-                    <button onclick="removeVaultLink(${idx})" class="text-slate-600 hover:text-red-400 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button onclick="removeVaultLink(${idx})" class="text-slate-700 hover:text-red-500 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                         <i class="fas fa-trash-alt text-[10px]"></i>
                     </button>
                 </li>
             `).join('');
         }
 
-        function saveLinks() { localStorage.setItem('h_links', JSON.stringify(state.links)); }
+        function saveLinks() { localStorage.setItem('h_links_v2', JSON.stringify(state.links)); }
         function updateCharCount(l) { document.getElementById('char-count').innerText = l.toString().padStart(6, '0'); }
         function updateClock() {
             const el = document.getElementById('current-time-desktop');
@@ -474,7 +531,7 @@
         }
 
         function clearAllData() {
-            if (confirm('WIPE ALL CASE INTELLIGENCE?')) {
+            if (confirm('CAUTION: PERMANENTLY WIPE ALL SESSION INTELLIGENCE?')) {
                 localStorage.clear();
                 location.reload();
             }
@@ -482,12 +539,12 @@
 
         function exportWorkspace() {
             const n = document.getElementById('case-notes').value;
-            const l = state.links.map(x => `[${x.ts}] ${x.url}`).join('\n');
-            const content = `HEIMDALL INTELLIGENCE PACKAGE\n============================\nTIMESTAMP: ${new Date().toISOString()}\n\nANALYSIS LOG:\n${n}\n\nPRESERVED SOURCES:\n${l}`;
+            const l = state.links.map(x => `[${x.ts}] [${x.label}] >> ${x.url}`).join('\n');
+            const content = `HEIMDALL INTELLIGENCE REPORT\n============================\nGENERATED: ${new Date().toISOString()}\n\nANALYSIS LOG:\n${n}\n\nEVIDENCE ARCHIVE:\n${l}\n\nEOF`;
             const blob = new Blob([content], { type: 'text/plain' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
-            a.download = `HEIMDALL_INTEL_${Date.now()}.txt`;
+            a.download = `HEIMDALL_REPORT_${Date.now()}.txt`;
             a.click();
         }
     </script>
