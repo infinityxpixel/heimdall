@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Heimdall | Full Spectrum OSINT</title>
+    <title>Heimdall | OSINT Framework</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -104,7 +104,7 @@
         </nav>
         <div class="p-6">
             <div class="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-4">
-                <div id="current-time-desktop" class="mono text-[10px] text-slate-500"></div>
+                <div id="current-time-desktop" class="mono text-[10px] text-slate-500 text-center"></div>
             </div>
         </div>
     </aside>
@@ -198,20 +198,6 @@
                             </div>
                         </div>
                     </div>
-                    
-                    <div class="h-card p-6">
-                        <h2 class="text-xs font-bold uppercase mb-4 text-slate-500">Preset EU Intelligence Dorks</h2>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                            <button onclick="setPresetDork('site:*.gov.uk filetype:pdf \"internal only\"')" class="text-left p-3 rounded-xl bg-white/5 border border-white/5 hover:border-indigo-500/50 transition-all">
-                                <div class="text-[10px] font-bold">UK Government Leak</div>
-                                <div class="text-[9px] mono text-slate-500 truncate">site:*.gov.uk filetype:pdf "internal only"</div>
-                            </button>
-                            <button onclick="setPresetDork('site:*.eu inurl:config \"index of\"')" class="text-left p-3 rounded-xl bg-white/5 border border-white/5 hover:border-indigo-500/50 transition-all">
-                                <div class="text-[10px] font-bold">EU Config Directories</div>
-                                <div class="text-[9px] mono text-slate-500 truncate">site:*.eu inurl:config "index of"</div>
-                            </button>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- GEO PANEL -->
@@ -257,8 +243,14 @@
                         <textarea id="case-notes" class="w-full h-64 p-4 text-sm mono" placeholder="Document intel chain..."></textarea>
                     </div>
                     <div class="h-card p-6">
-                        <h2 class="text-sm font-bold uppercase mb-4">Evidence Vault</h2>
-                        <ul id="link-list" class="space-y-2"></ul>
+                        <h2 class="text-sm font-bold uppercase mb-4 tracking-wider">Evidence Vault</h2>
+                        <div class="flex gap-2 mb-4">
+                            <input type="text" id="vault-input" placeholder="Paste URL source for preservation..." class="flex-1 px-4 py-2">
+                            <button onclick="addVaultLink()" class="btn-action px-6 rounded-xl text-xs font-bold">ADD SOURCE</button>
+                        </div>
+                        <ul id="link-list" class="space-y-2">
+                            <!-- Links render here -->
+                        </ul>
                         <button onclick="exportWorkspace()" class="w-full mt-6 btn-action py-3 rounded-xl text-xs uppercase">Export Intel Package</button>
                     </div>
                 </div>
@@ -370,7 +362,6 @@
             urls.forEach(u => window.open(u, '_blank'));
         }
 
-        // Email Intelligence
         function openEmail(type) {
             const val = document.getElementById('email-input').value.trim();
             if(!val) return notify('Email required', true);
@@ -386,13 +377,11 @@
         function runEmailDiscovery() {
             const val = document.getElementById('email-input').value.trim();
             if(!val) return notify('Email required', true);
-            const domain = val.split('@')[1];
             window.open(`https://intelx.io/?s=${val}`, '_blank');
             window.open(`https://dehashed.com/search?query=${val}`, '_blank');
             window.open(`https://www.google.com/search?q=\"${val}\"`, '_blank');
         }
 
-        // Dorking Logic
         function addDorkPart() {
             const op = document.getElementById('dork-operator').value;
             const val = document.getElementById('dork-value').value.trim();
@@ -403,11 +392,6 @@
         }
 
         function clearDork() { document.getElementById('dork-query').value = ''; }
-        
-        function setPresetDork(q) { 
-            document.getElementById('dork-query').value = q;
-            notify('Preset loaded');
-        }
 
         function runDork(engine) {
             const q = document.getElementById('dork-query').value.trim();
@@ -444,15 +428,45 @@
             window.open(map[type], '_blank');
         }
 
+        // Vault Logic
+        function addVaultLink() {
+            const input = document.getElementById('vault-input');
+            const url = input.value.trim();
+            if (!url) return notify('No URL to add', true);
+            
+            state.links.unshift({ url: url, ts: new Date().toISOString() });
+            input.value = '';
+            saveLinks();
+            renderLinks();
+            notify('Evidence added to vault');
+        }
+
+        function removeVaultLink(idx) {
+            state.links.splice(idx, 1);
+            saveLinks();
+            renderLinks();
+        }
+
         function renderLinks() {
             const l = document.getElementById('link-list');
+            if (state.links.length === 0) {
+                l.innerHTML = `<li class="text-[10px] text-slate-600 text-center py-4 uppercase tracking-tighter">No sources preserved in vault</li>`;
+                return;
+            }
             l.innerHTML = state.links.map((link, idx) => `
-                <li class="bg-[#1a1a1e] p-3 rounded-xl border border-white/5 flex justify-between items-center text-[10px] mono">
-                    <span class="truncate text-indigo-400">${link.url}</span>
+                <li class="bg-[#1a1a1e] p-3 rounded-xl border border-white/5 flex justify-between items-center group">
+                    <div class="truncate flex-1">
+                        <a href="${link.url}" target="_blank" class="text-[10px] mono text-indigo-400 underline decoration-indigo-500/30 truncate block">${link.url}</a>
+                        <div class="text-[8px] text-slate-600 mono mt-1">${link.ts}</div>
+                    </div>
+                    <button onclick="removeVaultLink(${idx})" class="text-slate-600 hover:text-red-400 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <i class="fas fa-trash-alt text-[10px]"></i>
+                    </button>
                 </li>
             `).join('');
         }
 
+        function saveLinks() { localStorage.setItem('h_links', JSON.stringify(state.links)); }
         function updateCharCount(l) { document.getElementById('char-count').innerText = l.toString().padStart(6, '0'); }
         function updateClock() {
             const el = document.getElementById('current-time-desktop');
@@ -460,7 +474,7 @@
         }
 
         function clearAllData() {
-            if (confirm('WIPE CASE DATA?')) {
+            if (confirm('WIPE ALL CASE INTELLIGENCE?')) {
                 localStorage.clear();
                 location.reload();
             }
@@ -468,7 +482,8 @@
 
         function exportWorkspace() {
             const n = document.getElementById('case-notes').value;
-            const content = `HEIMDALL INTEL\n================\n${n}`;
+            const l = state.links.map(x => `[${x.ts}] ${x.url}`).join('\n');
+            const content = `HEIMDALL INTELLIGENCE PACKAGE\n============================\nTIMESTAMP: ${new Date().toISOString()}\n\nANALYSIS LOG:\n${n}\n\nPRESERVED SOURCES:\n${l}`;
             const blob = new Blob([content], { type: 'text/plain' });
             const a = document.createElement('a');
             a.href = URL.createObjectURL(blob);
