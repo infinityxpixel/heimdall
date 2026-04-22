@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heimdall Intelligence | Advanced OSINT Framework</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>👁️</text></svg>">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
+        
+        :root {
+            --bg-base: #0a0a0c;
+            --bg-surface: #141417;
+            --accent: #6366f1; /* Indigo-500 */
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --border: rgba(255, 255, 255, 0.06);
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-primary);
+            font-family: 'Plus+Jakarta+Sans', sans-serif;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+
+        .h-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: all 0.2s ease;
+        }
+        .h-card:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .h-sidebar-link {
+            transition: all 0.2s;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .h-sidebar-link.active {
+            color: var(--text-primary);
+            background: rgba(99, 102, 241, 0.08);
+            border-left: 2px solid var(--accent);
+        }
+
+        input, textarea {
+            background: rgba(0, 0, 0, 0.2) !important;
+            border: 1px solid var(--border) !important;
+            color: var(--text-primary) !important;
+            border-radius: 8px !important;
+        }
+        input:focus {
+            outline: none !important;
+            border-color: var(--accent) !important;
+        }
+
+        .panel-content {
+            display: none;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        .panel-content.active { display: block; }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .btn-action {
+            background: var(--accent);
+            color: white;
+            font-weight: 700;
+            font-size: 0.75rem;
+            letter-spacing: 0.05em;
+            transition: all 0.2s;
+        }
+        .btn-action:hover {
+            filter: brightness(1.1);
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--accent);
+        }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden">
+
+    <!-- Sidebar -->
+    <aside class="w-64 bg-[#0d0d0f] border-r border-[#1a1a1e] flex flex-col">
+        <div class="p-8">
+            <h1 class="text-lg font-extrabold tracking-tighter flex items-center gap-2">
+                <span class="text-indigo-500">HEIMDALL</span>
+            </h1>
+            <div class="text-[9px] font-bold text-slate-600 tracking-[0.3em] uppercase mt-1">Intelligence Framework</div>
+        </div>
+
+        <nav class="flex-1 px-4 space-y-1">
+            <button onclick="showPanel('general')" id="btn-general" class="h-sidebar-link w-full text-left px-4 py-3 rounded-r-lg flex items-center gap-3">
+                <i class="fas fa-search w-4 opacity-70"></i> Search
+            </button>
+            <button onclick="showPanel('social')" id="btn-social" class="h-sidebar-link w-full text-left px-4 py-3 rounded-r-lg flex items-center gap-3">
+                <i class="fas fa-fingerprint w-4 opacity-70"></i> Social
+            </button>
+            <button onclick="showPanel('email')" id="btn-email" class="h-sidebar-link w-full text-left px-4 py-3 rounded-r-lg flex items-center gap-3">
+                <i class="fas fa-at w-4 opacity-70"></i> Email
+            </button>
+            <button onclick="showPanel('domain')" id="btn-domain" class="h-sidebar-link w-full text-left px-4 py-3 rounded-r-lg flex items-center gap-3">
+                <i class="fas fa-globe w-4 opacity-70"></i> Network
+            </button>
+            <button onclick="showPanel('dorking')" id="btn-dorking" class="h-sidebar-link w-full text-left px-4 py-3 rounded-r-lg flex items-center gap-3">
+                <i class="fas fa-terminal w-4 opacity-70"></i> Dorking
+            </button>
+            <button onclick="showPanel('workspace')" id="btn-workspace" class="h-sidebar-link w-full text-left px-4 py-3 rounded-r-lg flex items-center gap-3">
+                <i class="fas fa-folder-open w-4 opacity-70"></i> Workspace
+            </button>
+        </nav>
+
+        <div class="p-6">
+            <div class="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-4">
+                <div class="flex items-center gap-2 text-[10px] text-indigo-400 font-bold uppercase tracking-widest">
+                    <span class="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse"></span>
+                    Operational
+                </div>
+                <div id="current-time" class="mono text-[10px] text-slate-500 mt-2"></div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col overflow-hidden">
+        <header class="h-14 border-b border-[#1a1a1e] flex items-center justify-between px-10 bg-[#0a0a0c]/80 backdrop-blur-xl z-10">
+            <div id="panel-title" class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-500">General Search</div>
+            <div class="flex items-center gap-4">
+                <button onclick="clearAllData()" class="text-slate-600 hover:text-red-400 transition text-xs flex items-center gap-2">
+                    <i class="fas fa-trash-alt"></i> <span class="hidden md:inline uppercase tracking-tighter">Reset</span>
+                </button>
+            </div>
+        </header>
+
+        <div class="flex-1 overflow-y-auto p-10 max-w-7xl mx-auto w-full">
+            
+            <!-- GENERAL SEARCH -->
+            <div id="panel-general" class="panel-content space-y-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                <i class="fas fa-bullseye text-xs"></i>
+                            </div>
+                            <h2 class="text-sm font-bold">Quick Target</h2>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="text" id="username-input" placeholder="Search across web..." class="flex-1 px-4 py-2.5 text-sm">
+                            <button onclick="runUsernameSearch()" class="btn-action px-6 py-2.5 rounded-lg uppercase">Global</button>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <button onclick="openTarget('https://www.google.com/search?q=', 'username-input')" class="btn-secondary py-2 rounded-lg">Google</button>
+                            <button onclick="openTarget('https://www.bing.com/search?q=', 'username-input')" class="btn-secondary py-2 rounded-lg">Bing</button>
+                            <button onclick="openTarget('https://yandex.com/search/?text=', 'username-input')" class="btn-secondary py-2 rounded-lg">Yandex</button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                                <i class="fas fa-project-diagram text-xs"></i>
+                            </div>
+                            <h2 class="text-sm font-bold">Universal Pivot</h2>
+                        </div>
+                        <input type="text" id="query-input" placeholder="Keyword search..." class="w-full px-4 py-2.5 text-sm">
+                        <div class="flex flex-wrap gap-2">
+                            <button onclick="searchEngine('google')" class="btn-secondary px-4 py-2 rounded-lg">Google</button>
+                            <button onclick="searchEngine('duck')" class="btn-secondary px-4 py-2 rounded-lg">DuckDuckGo</button>
+                            <button onclick="searchEngine('shodan')" class="btn-secondary px-4 py-2 rounded-lg">Shodan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SOCIAL PANEL -->
+            <div id="panel-social" class="panel-content space-y-10">
+                <div class="h-card p-8">
+                    <h2 class="text-sm font-bold mb-6">Social Intelligence Scanner</h2>
+                    <div class="flex gap-2 mb-8">
+                        <input type="text" id="social-username" placeholder="Target Alias" class="flex-1 px-4 py-2.5 text-sm">
+                        <button onclick="runSocialDeepScan()" class="btn-action px-8 py-2.5 rounded-lg uppercase">Deep Scan</button>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <button onclick="openTarget('https://github.com/', 'social-username')" class="btn-secondary p-4 rounded-xl flex items-center gap-3">
+                            <i class="fab fa-github text-lg text-indigo-400"></i> GitHub
+                        </button>
+                        <button onclick="openTarget('https://twitter.com/', 'social-username')" class="btn-secondary p-4 rounded-xl flex items-center gap-3">
+                            <i class="fab fa-twitter text-lg text-indigo-400"></i> X/Twitter
+                        </button>
+                        <button onclick="openTarget('https://www.instagram.com/', 'social-username')" class="btn-secondary p-4 rounded-xl flex items-center gap-3">
+                            <i class="fab fa-instagram text-lg text-indigo-400"></i> Instagram
+                        </button>
+                        <button onclick="openTarget('https://www.linkedin.com/search/results/all/?keywords=', 'social-username')" class="btn-secondary p-4 rounded-xl flex items-center gap-3">
+                            <i class="fab fa-linkedin text-lg text-indigo-400"></i> LinkedIn
+                        </button>
+                        <button onclick="openTarget('https://www.facebook.com/search/top/?q=', 'social-username')" class="btn-secondary p-4 rounded-xl flex items-center gap-3">
+                            <i class="fab fa-facebook text-lg text-indigo-400"></i> Facebook
+                        </button>
+                        <button onclick="openTarget('https://www.reddit.com/user/', 'social-username')" class="btn-secondary p-4 rounded-xl flex items-center gap-3">
+                            <i class="fab fa-reddit text-lg text-indigo-400"></i> Reddit
+                        </button>
+                        <button onclick="openTarget('https://www.youtube.com/@', 'social-username')" class="btn-secondary p-4 rounded-xl flex items-center gap-3">
+                            <i class="fab fa-youtube text-lg text-indigo-400"></i> YouTube
+                        </button>
+                        <button onclick="openTarget('https://www.pinterest.com/', 'social-username')" class="btn-secondary p-4 rounded-xl flex items-center gap-3">
+                            <i class="fab fa-pinterest text-lg text-indigo-400"></i> Pinterest
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- EMAIL PANEL -->
+            <div id="panel-email" class="panel-content space-y-10">
+                <div class="h-card p-8 max-w-2xl">
+                    <h2 class="text-sm font-bold mb-6">Email Intelligence</h2>
+                    <div class="flex gap-2 mb-8">
+                        <input type="email" id="email-input" placeholder="investigate@target.com" class="flex-1 px-4 py-2.5 text-sm">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="emailAction('epieos')" class="btn-secondary py-4 rounded-xl flex items-center justify-center gap-3">
+                            <i class="fas fa-id-card text-indigo-400"></i> Epieos OSINT
+                        </button>
+                        <button onclick="emailAction('haveibeenpwned')" class="btn-secondary py-4 rounded-xl flex items-center justify-center gap-3">
+                            <i class="fas fa-biohazard text-indigo-400"></i> Data Breaches
+                        </button>
+                        <button onclick="emailAction('hunter')" class="btn-secondary py-4 rounded-xl flex items-center justify-center gap-3">
+                            <i class="fas fa-crosshairs text-indigo-400"></i> Corporate Pattern
+                        </button>
+                        <button onclick="emailAction('intelx')" class="btn-secondary py-4 rounded-xl flex items-center justify-center gap-3">
+                            <i class="fas fa-database text-indigo-400"></i> Intelligence X
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DOMAIN PANEL -->
+            <div id="panel-domain" class="panel-content space-y-10">
+                <div class="h-card p-8">
+                    <h2 class="text-sm font-bold mb-6">Infrastructure Mapping</h2>
+                    <div class="flex gap-2 mb-8">
+                        <input type="text" id="domain-input" placeholder="domain.com or IP address" class="flex-1 px-4 py-2.5 text-sm">
+                        <button onclick="openDomainTool('dns')" class="btn-action px-8 py-2.5 rounded-lg uppercase">Execute</button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <button onclick="openDomainTool('whois')" class="btn-secondary p-6 rounded-xl text-center flex flex-col items-center gap-3">
+                            <i class="fas fa-address-book text-xl text-indigo-400"></i>
+                            <span class="text-[10px] uppercase font-bold tracking-widest">Whois</span>
+                        </button>
+                        <button onclick="openDomainTool('dns')" class="btn-secondary p-6 rounded-xl text-center flex flex-col items-center gap-3">
+                            <i class="fas fa-server text-xl text-indigo-400"></i>
+                            <span class="text-[10px] uppercase font-bold tracking-widest">DNS Dump</span>
+                        </button>
+                        <button onclick="openDomainTool('history')" class="btn-secondary p-6 rounded-xl text-center flex flex-col items-center gap-3">
+                            <i class="fas fa-history text-xl text-indigo-400"></i>
+                            <span class="text-[10px] uppercase font-bold tracking-widest">Archive</span>
+                        </button>
+                        <button onclick="openDomainTool('subdomains')" class="btn-secondary p-6 rounded-xl text-center flex flex-col items-center gap-3">
+                            <i class="fas fa-sitemap text-xl text-indigo-400"></i>
+                            <span class="text-[10px] uppercase font-bold tracking-widest">Subdomains</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DORKING PANEL -->
+            <div id="panel-dorking" class="panel-content space-y-10">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                    <div class="space-y-6">
+                        <h2 class="text-sm font-bold">Advanced Dork Constructor</h2>
+                        <input type="text" id="dork-site" placeholder="Target domain (e.g., target.com)" class="w-full px-4 py-2.5 text-sm">
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="applyDork('files')" class="btn-secondary py-3 rounded-lg text-[10px] uppercase tracking-wider">Public Documents</button>
+                            <button onclick="applyDork('config')" class="btn-secondary py-3 rounded-lg text-[10px] uppercase tracking-wider">Configs / env</button>
+                            <button onclick="applyDork('login')" class="btn-secondary py-3 rounded-lg text-[10px] uppercase tracking-wider">Auth Portals</button>
+                            <button onclick="applyDork('dirs')" class="btn-secondary py-3 rounded-lg text-[10px] uppercase tracking-wider">Directory List</button>
+                            <button onclick="applyDork('logs')" class="btn-secondary py-3 rounded-lg text-[10px] uppercase tracking-wider">Log Discovery</button>
+                            <button onclick="applyDork('db')" class="btn-secondary py-3 rounded-lg text-[10px] uppercase tracking-wider">Database Files</button>
+                            <button onclick="applyDork('camera')" class="btn-secondary py-3 rounded-lg text-[10px] uppercase tracking-wider">IoT / Cameras</button>
+                            <button onclick="applyDork('paste')" class="btn-secondary py-3 rounded-lg text-[10px] uppercase tracking-wider">Pastebin Leaks</button>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-4">
+                        <div class="bg-[#141417] p-4 rounded-lg border border-white/5">
+                            <h3 class="text-[10px] font-bold text-slate-500 uppercase mb-3 tracking-widest">Generated Dork</h3>
+                            <textarea id="dork-output" class="w-full p-4 text-xs mono text-indigo-300 leading-relaxed min-h-[150px] bg-black/40 border-none outline-none resize-none" readonly></textarea>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="copyDork()" class="flex-1 btn-secondary py-3 rounded-lg uppercase text-[10px]">Copy to Buffer</button>
+                            <button onclick="launchDork()" class="flex-1 btn-action py-3 rounded-lg uppercase text-[10px]">Execute Search</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WORKSPACE PANEL -->
+            <div id="panel-workspace" class="panel-content space-y-10 h-full flex flex-col">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 flex-1">
+                    <div class="lg:col-span-2 flex flex-col">
+                        <div class="h-card p-8 flex-1 flex flex-col">
+                            <div class="flex justify-between items-center mb-6">
+                                <h2 class="text-sm font-bold">Investigation Log</h2>
+                                <span id="char-count" class="mono text-[10px] text-slate-500">000000</span>
+                            </div>
+                            <textarea id="case-notes" class="flex-1 w-full p-4 text-sm mono leading-relaxed resize-none border-none bg-transparent" placeholder="Begin logging artifacts and timestamps..."></textarea>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-8">
+                        <div class="h-card p-6 flex flex-col min-h-[300px]">
+                            <h2 class="text-[10px] font-bold uppercase tracking-widest text-slate-500 mb-6">Evidence Vault</h2>
+                            <div class="flex gap-2 mb-6">
+                                <input type="text" id="link-input" placeholder="Bookmark URL" class="flex-1 px-3 py-2 text-xs">
+                                <button onclick="addLink()" class="btn-action w-10 rounded-lg">+</button>
+                            </div>
+                            <ul id="link-list" class="space-y-2 overflow-y-auto flex-1 max-h-[400px]"></ul>
+                            <button onclick="exportWorkspace()" class="mt-6 btn-secondary py-3 rounded-lg w-full text-[10px] uppercase">Export Intel Package</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        const state = {
+            links: [],
+            current: 'general'
+        };
+
+        window.onload = () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            const savedNotes = localStorage.getItem('h_notes');
+            if (savedNotes) {
+                document.getElementById('case-notes').value = savedNotes;
+                updateCharCount(savedNotes.length);
+            }
+
+            state.links = JSON.parse(localStorage.getItem('h_links') || '[]');
+            renderLinks();
+
+            document.getElementById('case-notes').addEventListener('input', e => {
+                localStorage.setItem('h_notes', e.target.value);
+                updateCharCount(e.target.value.length);
+            });
+
+            showPanel('general');
+        };
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('current-time').innerText = now.toISOString().slice(0, 19).replace('T', ' ');
+        }
+
+        function updateCharCount(l) {
+            document.getElementById('char-count').innerText = l.toString().padStart(6, '0');
+        }
+
+        function showPanel(id) {
+            document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.h-sidebar-link').forEach(l => l.classList.remove('active'));
+            
+            document.getElementById(`panel-${id}`).classList.add('active');
+            document.getElementById(`btn-${id}`).classList.add('active');
+            
+            const titles = {
+                general: 'Global Search Hub',
+                social: 'Social Intelligence',
+                email: 'Communication OSINT',
+                domain: 'Infrastructure Mapping',
+                dorking: 'Advanced Dorking Engine',
+                workspace: 'Operations Workspace'
+            };
+            document.getElementById('panel-title').innerText = titles[id] || 'System';
+            state.current = id;
+        }
+
+        function notify(msg, err = false) {
+            const t = document.createElement('div');
+            t.className = `fixed bottom-10 left-1/2 -translate-x-1/2 px-6 py-3 rounded-xl shadow-2xl text-[10px] font-bold uppercase tracking-widest z-50 animate-pulse ${err ? 'bg-red-500 text-white' : 'bg-indigo-600 text-white'}`;
+            t.innerText = msg;
+            document.body.appendChild(t);
+            setTimeout(() => t.remove(), 2500);
+        }
+
+        function openTarget(url, inputId) {
+            const val = document.getElementById(inputId).value.trim();
+            if (!val) return notify('Input required', true);
+            window.open(url + val, '_blank');
+        }
+
+        function searchEngine(e) {
+            const q = document.getElementById('query-input').value.trim();
+            if (!q) return notify('Query empty', true);
+            const map = {
+                google: `https://google.com/search?q=${encodeURIComponent(q)}`,
+                duck: `https://duckduckgo.com/?q=${encodeURIComponent(q)}`,
+                shodan: `https://shodan.io/search?query=${encodeURIComponent(q)}`
+            };
+            window.open(map[e], '_blank');
+        }
+
+        function runUsernameSearch() {
+            const u = document.getElementById('username-input').value.trim();
+            if (!u) return notify('Enter target name', true);
+            notify(`Broad scan initiated: ${u}`);
+            ['https://www.google.com/search?q=', 'https://www.bing.com/search?q='].forEach(s => window.open(s + encodeURIComponent(u), '_blank'));
+        }
+
+        function runSocialDeepScan() {
+            const u = document.getElementById('social-username').value.trim();
+            if (!u) return notify('Enter alias', true);
+            notify(`Scanning primary networks for: ${u}`);
+            const networks = [
+                'https://github.com/', 
+                'https://twitter.com/', 
+                'https://www.instagram.com/',
+                'https://www.reddit.com/user/',
+                'https://www.linkedin.com/search/results/all/?keywords='
+            ];
+            networks.forEach(url => window.open(url + u, '_blank'));
+        }
+
+        function emailAction(t) {
+            const e = document.getElementById('email-input').value.trim();
+            if (!e) return notify('Email required', true);
+            const map = {
+                haveibeenpwned: `https://haveibeenpwned.com/account/${e}`,
+                hunter: `https://hunter.io/email-verifier/${e}`,
+                epieos: `https://epieos.com/?q=${e}`,
+                intelx: `https://intelx.io/?s=${e}`
+            };
+            window.open(map[t], '_blank');
+        }
+
+        function openDomainTool(t) {
+            const d = document.getElementById('domain-input').value.trim();
+            if (!d) return notify('Domain required', true);
+            const map = {
+                whois: `https://www.whois.com/whois/${d}`,
+                dns: `https://dnsdumpster.com/?target=${d}`,
+                history: `https://web.archive.org/web/*/${d}`,
+                subdomains: `https://crt.sh/?q=${d}`
+            };
+            window.open(map[t], '_blank');
+        }
+
+        function applyDork(t) {
+            const s = document.getElementById('dork-site').value.trim();
+            const prefix = s ? `site:${s} ` : '';
+            const dorks = {
+                files: `${prefix}filetype:pdf OR filetype:doc OR filetype:xls OR filetype:ppt`,
+                config: `${prefix}extension:env OR extension:conf OR extension:bak OR extension:old OR extension:swp`,
+                login: `${prefix}inurl:admin OR inurl:login OR inurl:portal OR inurl:setup OR intitle:login`,
+                dirs: `${prefix}intitle:"index of" "parent directory" OR "Name" "Last modified"`,
+                logs: `${prefix}filetype:log OR extension:log intext:error OR intext:exception OR inurl:logs`,
+                db: `${prefix}extension:sql OR extension:sqlite OR extension:db OR extension:dump OR extension:mdb`,
+                camera: `${prefix}inurl:view/view.shtml OR intitle:"Live View / - AXIS" OR inurl:CgiStart?page=Single`,
+                paste: `${prefix}site:pastebin.com OR site:controlc.com OR site:justpaste.it`
+            };
+            document.getElementById('dork-output').value = dorks[t] || '';
+            notify('Dork generated');
+        }
+
+        function launchDork() {
+            const d = document.getElementById('dork-output').value;
+            if (!d) return notify('No dork generated', true);
+            window.open(`https://google.com/search?q=${encodeURIComponent(d)}`, '_blank');
+        }
+
+        function copyDork() {
+            const o = document.getElementById('dork-output');
+            if (!o.value) return notify('Nothing to copy', true);
+            o.select();
+            document.execCommand('copy');
+            notify('Copied to buffer');
+        }
+
+        function addLink() {
+            const i = document.getElementById('link-input');
+            const v = i.value.trim();
+            if (v) {
+                state.links.unshift({ url: v, date: new Date().toLocaleDateString() });
+                i.value = '';
+                saveLinks();
+                renderLinks();
+            }
+        }
+
+        function renderLinks() {
+            const l = document.getElementById('link-list');
+            l.innerHTML = state.links.map((link, idx) => `
+                <li class="bg-[#1a1a1e] p-3 rounded-lg border border-white/5 flex justify-between items-center group">
+                    <div class="truncate pr-4 flex-1">
+                        <a href="${link.url}" target="_blank" class="text-[10px] mono text-indigo-400 hover:underline transition">${link.url}</a>
+                    </div>
+                    <button onclick="removeLink(${idx})" class="text-slate-600 hover:text-red-400 transition opacity-0 group-hover:opacity-100 px-2">
+                        <i class="fas fa-times text-[10px]"></i>
+                    </button>
+                </li>
+            `).join('');
+        }
+
+        function removeLink(idx) {
+            state.links.splice(idx, 1);
+            saveLinks();
+            renderLinks();
+        }
+
+        function saveLinks() { 
+            localStorage.setItem('h_links', JSON.stringify(state.links)); 
+        }
+
+        function clearAllData() {
+            if (confirm('DESTRUCTIVE ACTION: Wipe all investigation data?')) {
+                localStorage.clear();
+                location.reload();
+            }
+        }
+
+        function exportWorkspace() {
+            const n = document.getElementById('case-notes').value;
+            const l = state.links.map(x => x.url).join('\n');
+            const timestamp = new Date().toISOString();
+            const content = `HEIMDALL INTELLIGENCE REPORT\nGENERATED: ${timestamp}\n------------------------------\n\nINVESTIGATION LOG:\n${n}\n\nEVIDENCE LINKS:\n${l || 'No links stored'}`;
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = `HEIMDALL_INTEL_${Date.now()}.txt`;
+            a.click();
+            notify('Report Exported');
+        }
+    </script>
+</body>
+</html>
