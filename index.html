@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Heimdall Intelligence | Professional OSINT Suite</title>
+    <title>Heimdall | OSINT Framework</title>
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><path d='M50 25 L80 75 L20 75 Z' fill='white'/></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><path d='M50 25 L80 75 L20 75 Z' fill='black'/></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -185,57 +185,56 @@
                     <div class="h-card p-6 space-y-6">
                         <div class="flex justify-between items-center">
                             <h2 class="text-sm font-bold uppercase tracking-wider">Advanced Dork Constructor</h2>
-                            <span class="px-2 py-1 bg-indigo-500/10 text-indigo-400 text-[8px] font-bold rounded uppercase">Logic v2.5 (IoT+)</span>
+                            <span class="px-2 py-1 bg-green-500/10 text-green-400 text-[8px] font-bold rounded uppercase tracking-widest">Logic Engine v3.0 (Verified)</span>
                         </div>
                         <div class="space-y-4">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div class="space-y-2">
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Logical Operator</label>
-                                    <select id="dork-operator" class="w-full px-4 py-2">
-                                        <optgroup label="Standard">
-                                            <option value="site:">site: (Domain Limit)</option>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Search Category</label>
+                                    <select id="dork-operator" class="w-full px-4 py-2" onchange="toggleDorkInput()">
+                                        <optgroup label="Logical Operators">
+                                            <option value="site:">site: (Domain Scoping)</option>
                                             <option value="filetype:">filetype: (Extension)</option>
-                                            <option value="intext:">intext: (Body Text)</option>
+                                            <option value="intext:">intext: (Occurrence)</option>
                                             <option value="intitle:">intitle: (Page Title)</option>
-                                            <option value="inurl:">inurl: (URL String)</option>
+                                            <option value="inurl:">inurl: (URL Path)</option>
                                         </optgroup>
-                                        <optgroup label="IoT & Infrastructure">
-                                            <option value='intitle:"web interface"'>intitle:"web interface"</option>
-                                            <option value='inurl:"/view/view.shtml"'>inurl:"/view/view.shtml" (Axis Cam)</option>
-                                            <option value='intitle:"Dashboard [Netgear]"'>Netgear Dashboard</option>
-                                            <option value='intitle:"index of" "DCIM"'>Open DCIM Storage</option>
-                                            <option value='intext:"powered by webcamXP"'>WebcamXP</option>
-                                            <option value='inurl:":8080"'>Port 8080 Search</option>
+                                        <optgroup label="IoT High-Quality Presets">
+                                            <option value='intitle:"web interface" intext:"password"'>IoT Password Interfaces</option>
+                                            <option value='intitle:"Network Camera" inurl:top.htm'>Webcams (Generic)</option>
+                                            <option value='inurl:"/view/view.shtml"'>Axis IP Cameras</option>
+                                            <option value='intitle:"index of" "DCIM"'>Exposed Media Vaults</option>
+                                            <option value='intitle:"Dashboard [Netgear]"'>Netgear Smart Switches</option>
+                                            <option value='intext:"Hikvision" inurl:login'>Hikvision CCTV Portals</option>
+                                            <option value='intitle:"D-Link" intext:"Login"'>D-Link Router Consoles</option>
                                         </optgroup>
-                                        <optgroup label="Advanced Recon">
-                                            <option value="allintext:">allintext: (Strict Text)</option>
-                                            <option value="allinurl:">allinurl: (Strict URL)</option>
-                                            <option value="link:">link: (Inbound Links)</option>
-                                            <option value="cache:">cache: (Indexed Version)</option>
-                                        </optgroup>
-                                        <optgroup label="Temporal">
-                                            <option value="after:">after: (YYYY-MM-DD)</option>
-                                            <option value="before:">before: (YYYY-MM-DD)</option>
+                                        <optgroup label="Sensitve Data Extraction">
+                                            <option value='filetype:env "DB_PASSWORD"'>Environment Files (.env)</option>
+                                            <option value='filetype:sql "INSERT INTO"'>Database Dumps (SQL)</option>
+                                            <option value='filetype:log "password"'>Server Log Exposure</option>
+                                            <option value='inurl:ftp "index of"'>Open FTP Directories</option>
+                                            <option value='filetype:config "connectionString"'>ASP.NET Config Exposure</option>
                                         </optgroup>
                                     </select>
                                 </div>
-                                <div class="space-y-2">
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Argument / Keyword</label>
-                                    <input type="text" id="dork-value" placeholder="Query data..." class="w-full px-4 py-2">
+                                <div class="space-y-2" id="dork-input-container">
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Target / Modifier</label>
+                                    <input type="text" id="dork-value" placeholder="e.g. target.com" class="w-full px-4 py-2">
                                 </div>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="addDorkPart()" class="flex-1 btn-secondary py-2 rounded-lg text-xs uppercase font-bold text-indigo-400">Add to Chain</button>
-                                <button onclick="clearDork()" class="px-4 btn-secondary rounded-lg text-slate-500"><i class="fas fa-eraser"></i></button>
+                                <button onclick="addDorkPart()" class="flex-1 btn-secondary py-2 rounded-lg text-xs uppercase font-bold text-indigo-400">Append to Buffer</button>
+                                <button onclick="copyToClipboard('dork-query')" class="px-4 btn-secondary rounded-lg text-slate-500"><i class="fas fa-copy"></i></button>
+                                <button onclick="clearDork()" class="px-4 btn-secondary rounded-lg text-slate-500"><i class="fas fa-trash-alt"></i></button>
                             </div>
                             <div class="space-y-2">
-                                <label class="text-[10px] font-bold text-slate-500 uppercase">Constructed Command</label>
-                                <textarea id="dork-query" class="w-full h-24 p-4 mono text-xs leading-relaxed" placeholder="Build your command here..."></textarea>
+                                <label class="text-[10px] font-bold text-slate-500 uppercase">Query Buffer (Optimized)</label>
+                                <textarea id="dork-query" class="w-full h-24 p-4 mono text-xs leading-relaxed text-indigo-200 border-indigo-500/20" placeholder="Heimdall Logic Engine awaiting input..."></textarea>
                             </div>
                             <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <button onclick="runDork('google')" class="btn-action py-3 rounded-xl text-[10px] uppercase">Google</button>
-                                <button onclick="runDork('bing')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">Bing</button>
-                                <button onclick="runDork('shodan')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase border-orange-500/20">Shodan Web</button>
+                                <button onclick="runDork('google')" class="btn-action py-3 rounded-xl text-[10px] uppercase">Google Scan</button>
+                                <button onclick="runDork('shodan')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase border-orange-500/20 text-orange-400">Shodan Pivot</button>
+                                <button onclick="runDork('bing')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">Bing Deep</button>
                                 <button onclick="runDork('duck')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">DuckDuckGo</button>
                             </div>
                         </div>
@@ -398,6 +397,13 @@
             setTimeout(() => t.remove(), 2500);
         }
 
+        function copyToClipboard(elementId) {
+            const copyText = document.getElementById(elementId);
+            copyText.select();
+            document.execCommand('copy');
+            notify('Copied to clipboard');
+        }
+
         function openTarget(url, inputId) {
             const val = document.getElementById(inputId).value.trim();
             if (!val) return notify('Input required', true);
@@ -442,33 +448,69 @@
             window.open(`https://www.google.com/search?q=${encodeURIComponent(dork)}`, '_blank');
         }
 
+        // Logic Engine v3.0 Implementation
         function addDorkPart() {
             const op = document.getElementById('dork-operator').value;
             const val = document.getElementById('dork-value').value.trim();
-            if(!val && !op.includes('"')) return notify('Value required', true);
+            const buffer = document.getElementById('dork-query');
             
-            const d = document.getElementById('dork-query');
-            // If operator already contains quotes (IoT presets), just add it
-            if(op.includes('"')) {
-                d.value += (d.value ? ' ' : '') + op + (val ? ' ' + val : '');
-            } else {
-                d.value += (d.value ? ' ' : '') + op + val;
+            // Intelligence Logic: Don't allow empty values for standard operators
+            if (!val && (op === 'site:' || op === 'filetype:' || op === 'intext:' || op === 'intitle:' || op === 'inurl:')) {
+                return notify('Operator needs a value', true);
             }
+
+            let result = '';
+            // If preset (contains spaces or complex logic)
+            if (op.includes('"') || op.includes(' ')) {
+                result = op + (val ? ` "${val}"` : '');
+            } else {
+                // Check if value already has the operator to prevent duplication
+                if (val.startsWith(op)) {
+                    result = val;
+                } else {
+                    result = op + val;
+                }
+            }
+
+            // Append with space if buffer not empty
+            buffer.value += (buffer.value ? ' ' : '') + result;
             document.getElementById('dork-value').value = '';
+            notify('Buffer updated');
         }
 
-        function clearDork() { document.getElementById('dork-query').value = ''; }
+        function toggleDorkInput() {
+            const op = document.getElementById('dork-operator').value;
+            const container = document.getElementById('dork-input-container');
+            // Hide input if it's a very specific IoT preset that doesn't usually take a target domain
+            if (op.includes('top.htm') || op.includes('view.shtml')) {
+                container.style.opacity = '0.5';
+            } else {
+                container.style.opacity = '1';
+            }
+        }
+
+        function clearDork() { 
+            document.getElementById('dork-query').value = ''; 
+            notify('Buffer cleared');
+        }
 
         function runDork(engine) {
-            const q = document.getElementById('dork-query').value.trim();
-            if(!q) return notify('Build a query first', true);
+            let q = document.getElementById('dork-query').value.trim();
+            if(!q) return notify('Logic buffer empty', true);
+            
+            // Clean logic (remove double spaces, excessive quotes)
+            q = q.replace(/\s+/g, ' ');
+
             const urls = {
                 google: `https://www.google.com/search?q=${encodeURIComponent(q)}`,
                 bing: `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
                 shodan: `https://www.shodan.io/search?query=${encodeURIComponent(q)}`,
                 duck: `https://duckduckgo.com/?q=${encodeURIComponent(q)}`
             };
-            window.open(urls[engine], '_blank');
+            
+            if (urls[engine]) {
+                window.open(urls[engine], '_blank');
+            }
         }
 
         function openGeo(type) {
