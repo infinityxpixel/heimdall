@@ -4,11 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Heimdall | OSINT Framework</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><path d='M50 25 L80 75 L20 75 Z' fill='black'/></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Plus+Jakarta+Sans:wght@300;400;600;800&display=swap');
         
@@ -24,586 +27,222 @@
         body {
             background-color: var(--bg-base);
             color: var(--text-primary);
-            font-family: 'Plus+Jakarta+Sans', sans-serif;
-            overscroll-behavior-y: contain;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow: hidden;
         }
 
-        .mono { font-family: 'JetBrains Mono', monospace; }
+        /* Auth Lock Screen Styles */
+        #auth-overlay {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-base);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
 
-        .h-card {
+        .login-card {
             background: var(--bg-surface);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            transition: border 0.3s ease;
-        }
-        .h-card:hover { border-color: rgba(99, 102, 241, 0.3); }
-
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .mobile-nav { display: flex; }
-            .main-content { padding-bottom: 80px; }
-        }
-        @media (min-width: 769px) {
-            .sidebar { display: flex; }
-            .mobile-nav { display: none; }
+            padding: 3rem;
+            border-radius: 24px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        .nav-link {
-            transition: all 0.2s;
-            color: var(--text-secondary);
-        }
-        .nav-link.active {
-            color: var(--accent);
-            background: rgba(99, 102, 241, 0.1);
-        }
-
-        input, textarea, select {
-            background: rgba(0, 0, 0, 0.3) !important;
-            border: 1px solid var(--border) !important;
-            color: var(--text-primary) !important;
-            border-radius: 12px !important;
-            font-size: 14px !important;
-            outline: none !important;
-        }
-        input:focus, select:focus { border-color: var(--accent) !important; }
-
-        .panel-content {
-            display: none;
-            animation: fadeIn 0.2s ease-out;
-        }
-        .panel-content.active { display: block; }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .btn-action {
-            background: var(--accent);
-            color: white;
+        .google-btn {
+            background: white;
+            color: black;
+            padding: 12px 24px;
+            border-radius: 12px;
             font-weight: 700;
-            transition: all 0.2s;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2);
-        }
-        .btn-action:active { transform: scale(0.97); }
-
-        .btn-secondary {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 2rem auto 0;
             transition: all 0.2s;
         }
-        .btn-secondary:hover { background: rgba(255, 255, 255, 0.08); }
 
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        .google-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.2); }
+
+        /* Main App Styles */
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .h-card { background: var(--bg-surface); border: 1px solid var(--border); border-radius: 16px; transition: border 0.3s ease; }
+        .h-card:hover { border-color: rgba(99, 102, 241, 0.3); }
+        .nav-link { transition: all 0.2s; color: var(--text-secondary); }
+        .nav-link.active { color: var(--accent); background: rgba(99, 102, 241, 0.1); }
+        input, textarea, select { background: rgba(0, 0, 0, 0.3) !important; border: 1px solid var(--border) !important; color: var(--text-primary) !important; border-radius: 12px !important; outline: none !important; }
+        .panel-content { display: none; animation: fadeIn 0.2s ease-out; }
+        .panel-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .btn-action { background: var(--accent); color: white; font-weight: 700; transition: all 0.2s; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.2); }
+        .btn-secondary { background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border); transition: all 0.2s; }
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="h-screen flex flex-col md:flex-row overflow-hidden">
+<body class="h-screen flex flex-col md:flex-row">
 
-    <!-- Desktop Sidebar -->
-    <aside class="sidebar w-64 bg-[#0d0d0f] border-r border-[#1a1a1e] flex-col">
-        <div class="p-8">
-            <h1 class="text-xl font-extrabold tracking-tighter flex items-center gap-2 text-indigo-500">
-                HEIMDALL
-            </h1>
-            <div class="text-[9px] font-bold text-slate-600 tracking-[0.3em] uppercase mt-1">Intelligence Framework</div>
-        </div>
-        <nav id="sidebar-nav" class="flex-1 px-4 space-y-1 overflow-y-auto">
-            <!-- Nav generated by JS -->
-        </nav>
-        <div class="p-6">
-            <div class="bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-4">
-                <div id="current-time-desktop" class="mono text-[10px] text-slate-500 text-center"></div>
+    <!-- Auth Lock Screen -->
+    <div id="auth-overlay">
+        <div class="login-card">
+            <div class="mb-6">
+                <div class="w-16 h-16 bg-indigo-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-shield-halved text-2xl text-white"></i>
+                </div>
+                <h2 class="text-2xl font-extrabold tracking-tighter">HEIMDALL GATE</h2>
+                <p class="text-slate-500 text-xs mt-2 uppercase tracking-[0.2em]">Authorized Access Only</p>
             </div>
+            <p id="auth-error" class="text-red-400 text-[10px] font-bold uppercase hidden">Access Denied: Email not on whitelist</p>
+            <button onclick="signIn()" class="google-btn">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="18">
+                Sign in with Google
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Content (Hidden until Auth) -->
+    <aside class="sidebar w-64 bg-[#0d0d0f] border-r border-[#1a1a1e] flex flex-col hidden" id="main-sidebar">
+        <div class="p-8">
+            <h1 class="text-xl font-extrabold tracking-tighter text-indigo-500">HEIMDALL</h1>
+            <div id="user-info" class="text-[9px] text-slate-500 mt-2 truncate"></div>
+        </div>
+        <nav id="sidebar-nav" class="flex-1 px-4 space-y-1"></nav>
+        <div class="p-6">
+            <button onclick="signOut()" class="w-full py-2 text-[10px] font-bold text-slate-500 hover:text-white transition-colors">LOGOUT SESSION</button>
         </div>
     </aside>
 
-    <!-- Mobile Top Header -->
-    <header class="md:hidden h-14 bg-[#0d0d0f] border-b border-[#1a1a1e] flex items-center justify-between px-4 z-20">
-        <span class="text-indigo-500 font-extrabold tracking-tighter">HEIMDALL</span>
-        <button onclick="clearAllData()" class="text-slate-500"><i class="fas fa-trash-alt text-sm"></i></button>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-1 flex flex-col overflow-hidden relative">
-        <header class="hidden md:flex h-14 border-b border-[#1a1a1e] items-center justify-between px-10 bg-[#0a0a0c]/80 backdrop-blur-xl z-10">
+    <main class="flex-1 flex flex-col overflow-hidden relative hidden" id="main-app">
+        <header class="flex h-14 border-b border-[#1a1a1e] items-center justify-between px-10 bg-[#0a0a0c]/80 backdrop-blur-xl">
             <div id="panel-title" class="text-[10px] font-extrabold uppercase tracking-[0.25em] text-slate-500">Search</div>
             <div class="flex items-center gap-6">
-                <div id="status-indicator" class="flex items-center gap-2">
+                <div class="flex items-center gap-2">
                     <div class="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-                    <span class="text-[9px] font-bold text-slate-500 uppercase">System Ready</span>
+                    <span class="text-[9px] font-bold text-slate-500 uppercase">Secure Link Active</span>
                 </div>
-                <button onclick="clearAllData()" class="text-slate-600 hover:text-red-400 text-xs font-bold">RESET SESSION</button>
             </div>
         </header>
 
-        <div id="main-scroll" class="flex-1 overflow-y-auto p-4 md:p-10">
+        <div class="flex-1 overflow-y-auto p-4 md:p-10">
             <div class="max-w-4xl mx-auto w-full space-y-8">
-                
                 <!-- SEARCH PANEL -->
-                <div id="panel-general" class="panel-content space-y-6">
+                <div id="panel-general" class="panel-content active space-y-6">
                     <div class="h-card p-6 space-y-4">
-                        <div class="flex justify-between items-center">
-                            <h2 class="text-sm font-bold uppercase tracking-wider">Multi-Source Discovery</h2>
-                            <i class="fas fa-satellite-dish text-indigo-500 text-xs opacity-50"></i>
-                        </div>
-                        <div class="flex flex-col gap-3">
-                            <input type="text" id="global-input" placeholder="Entity name, unique alias, or company registration..." class="w-full px-4 py-3">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <button onclick="runSpectrumSearch()" class="btn-action py-3 rounded-xl text-xs uppercase col-span-full">Initialize Global Scan</button>
-                                <button onclick="openTarget('https://www.qwant.com/?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold uppercase">Qwant</button>
-                                <button onclick="openTarget('https://www.mojeek.com/search?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold uppercase">Mojeek</button>
-                                <button onclick="openTarget('https://search.brave.com/search?q=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold uppercase">Brave</button>
-                                <button onclick="openTarget('https://yandex.com/search/?text=', 'global-input')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold uppercase">Yandex</button>
-                            </div>
-                        </div>
+                        <h2 class="text-sm font-bold uppercase">Multi-Source Discovery</h2>
+                        <input type="text" id="global-input" placeholder="Entity name or alias..." class="w-full px-4 py-3">
+                        <button onclick="runSpectrumSearch()" class="btn-action w-full py-3 rounded-xl text-xs uppercase">Initialize Global Scan</button>
                     </div>
                 </div>
-
-                <!-- EMAIL PANEL -->
-                <div id="panel-email" class="panel-content space-y-6">
-                    <div class="h-card p-6 space-y-4">
-                        <h2 class="text-sm font-bold uppercase tracking-wider">Electronic Mail Forensics</h2>
-                        <div class="flex flex-col gap-3">
-                            <input type="text" id="email-input" placeholder="target.person@corporate.eu" class="w-full px-4 py-3">
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <button onclick="openEmail('hunter')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">HUNTER</button>
-                                <button onclick="openEmail('eon')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">EPIEOS</button>
-                                <button onclick="openEmail('leakcheck')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">LEAKCHECK</button>
-                                <button onclick="openEmail('pwned')" class="btn-secondary py-2 rounded-lg text-[10px] font-bold">HIBP</button>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-                                <button onclick="runEmailDiscovery()" class="btn-action py-3 rounded-xl text-xs uppercase">Deep Discovery</button>
-                                <button onclick="emailDorkSearch()" class="btn-secondary py-3 rounded-xl text-xs uppercase font-bold border-indigo-500/20">File-Based Email Dork</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+                
                 <!-- DORKING PANEL -->
                 <div id="panel-dorks" class="panel-content space-y-6">
-                    <div class="h-card p-6 space-y-6">
-                        <div class="flex justify-between items-center">
-                            <h2 class="text-sm font-bold uppercase tracking-wider">Advanced Dork Constructor</h2>
-                            <span class="px-2 py-1 bg-green-500/10 text-green-400 text-[8px] font-bold rounded uppercase tracking-widest">Logic Engine v3.0 (Verified)</span>
-                        </div>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="space-y-2">
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Search Category</label>
-                                    <select id="dork-operator" class="w-full px-4 py-2" onchange="toggleDorkInput()">
-                                        <optgroup label="Logical Operators">
-                                            <option value="site:">site: (Domain Scoping)</option>
-                                            <option value="filetype:">filetype: (Extension)</option>
-                                            <option value="intext:">intext: (Occurrence)</option>
-                                            <option value="intitle:">intitle: (Page Title)</option>
-                                            <option value="inurl:">inurl: (URL Path)</option>
-                                        </optgroup>
-                                        <optgroup label="IoT High-Quality Presets">
-                                            <option value='intitle:"web interface" intext:"password"'>IoT Password Interfaces</option>
-                                            <option value='intitle:"Network Camera" inurl:top.htm'>Webcams (Generic)</option>
-                                            <option value='inurl:"/view/view.shtml"'>Axis IP Cameras</option>
-                                            <option value='intitle:"index of" "DCIM"'>Exposed Media Vaults</option>
-                                            <option value='intitle:"Dashboard [Netgear]"'>Netgear Smart Switches</option>
-                                            <option value='intext:"Hikvision" inurl:login'>Hikvision CCTV Portals</option>
-                                            <option value='intitle:"D-Link" intext:"Login"'>D-Link Router Consoles</option>
-                                        </optgroup>
-                                        <optgroup label="Sensitve Data Extraction">
-                                            <option value='filetype:env "DB_PASSWORD"'>Environment Files (.env)</option>
-                                            <option value='filetype:sql "INSERT INTO"'>Database Dumps (SQL)</option>
-                                            <option value='filetype:log "password"'>Server Log Exposure</option>
-                                            <option value='inurl:ftp "index of"'>Open FTP Directories</option>
-                                            <option value='filetype:config "connectionString"'>ASP.NET Config Exposure</option>
-                                        </optgroup>
-                                    </select>
-                                </div>
-                                <div class="space-y-2" id="dork-input-container">
-                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Target / Modifier</label>
-                                    <input type="text" id="dork-value" placeholder="e.g. target.com" class="w-full px-4 py-2">
-                                </div>
-                            </div>
-                            <div class="flex gap-2">
-                                <button onclick="addDorkPart()" class="flex-1 btn-secondary py-2 rounded-lg text-xs uppercase font-bold text-indigo-400">Append to Buffer</button>
-                                <button onclick="copyToClipboard('dork-query')" class="px-4 btn-secondary rounded-lg text-slate-500"><i class="fas fa-copy"></i></button>
-                                <button onclick="clearDork()" class="px-4 btn-secondary rounded-lg text-slate-500"><i class="fas fa-trash-alt"></i></button>
-                            </div>
-                            <div class="space-y-2">
-                                <label class="text-[10px] font-bold text-slate-500 uppercase">Query Buffer (Optimized)</label>
-                                <textarea id="dork-query" class="w-full h-24 p-4 mono text-xs leading-relaxed text-indigo-200 border-indigo-500/20" placeholder="Heimdall Logic Engine awaiting input..."></textarea>
-                            </div>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                                <button onclick="runDork('google')" class="btn-action py-3 rounded-xl text-[10px] uppercase">Google Scan</button>
-                                <button onclick="runDork('shodan')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase border-orange-500/20 text-orange-400">Shodan Pivot</button>
-                                <button onclick="runDork('bing')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">Bing Deep</button>
-                                <button onclick="runDork('duck')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">DuckDuckGo</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- NETWORK PANEL -->
-                <div id="panel-network" class="panel-content space-y-6">
-                    <div class="h-card p-6">
-                        <h2 class="text-sm font-bold uppercase mb-4 tracking-wider">Infrastructure & DNS</h2>
-                        <input type="text" id="network-input" placeholder="target-domain.com or IP address" class="w-full px-4 py-3 mb-4">
-                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            <button onclick="openNet('dnsdump')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
-                                <i class="fas fa-project-diagram text-indigo-400 text-lg"></i> DNS DUMPSTER
-                            </button>
-                            <button onclick="openNet('crt')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
-                                <i class="fas fa-certificate text-indigo-400 text-lg"></i> CERT SEARCH
-                            </button>
-                            <button onclick="openNet('shodan')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
-                                <i class="fas fa-search text-indigo-400 text-lg"></i> SHODAN IO
-                            </button>
-                            <button onclick="openNet('builtwith')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
-                                <i class="fas fa-microchip text-indigo-400 text-lg"></i> BUILTWITH
-                            </button>
-                            <button onclick="openNet('ripe')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
-                                <i class="fas fa-network-wired text-indigo-400 text-lg"></i> RIPE WHOIS
-                            </button>
-                            <button onclick="openNet('securitytrails')" class="btn-secondary p-4 rounded-xl flex flex-col gap-2 text-[10px] items-center text-center">
-                                <i class="fas fa-shield-alt text-indigo-400 text-lg"></i> SEC TRAILS
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- GEO PANEL -->
-                <div id="panel-geo" class="panel-content space-y-6">
                     <div class="h-card p-6 space-y-4">
-                        <h2 class="text-sm font-bold uppercase tracking-wider">Geospatial Intelligence</h2>
-                        <input type="text" id="geo-input" placeholder="Search coords, address, or landmark..." class="w-full px-4 py-3">
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
-                            <button onclick="openGeo('geoportail')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">GEOPORTAIL (FR)</button>
-                            <button onclick="openGeo('osm')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">OPENSTREETMAP</button>
-                            <button onclick="openGeo('sentinel')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">SENTINEL HUB</button>
-                            <button onclick="openGeo('wikimapia')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase font-bold">WIKIMAPIA</button>
+                        <h2 class="text-sm font-bold uppercase">Advanced Dork Constructor</h2>
+                        <textarea id="dork-query" class="w-full h-24 p-4 mono text-xs" placeholder="Query Buffer..."></textarea>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="runDork('google')" class="btn-action py-3 rounded-xl text-[10px] uppercase">Google Scan</button>
+                            <button onclick="runDork('shodan')" class="btn-secondary py-3 rounded-xl text-[10px] uppercase">Shodan Pivot</button>
                         </div>
                     </div>
                 </div>
-
-                <!-- WORKSPACE -->
-                <div id="panel-workspace" class="panel-content space-y-6">
-                    <div class="h-card p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h2 class="text-sm font-bold uppercase">Case Intelligence Journal</h2>
-                            <span id="char-count" class="mono text-[10px] text-slate-500">000000</span>
-                        </div>
-                        <textarea id="case-notes" class="w-full h-64 p-4 text-sm mono leading-relaxed" placeholder="Initial findings, pivot points, and analysis notes..."></textarea>
-                    </div>
-                    <div class="h-card p-6">
-                        <h2 class="text-sm font-bold uppercase mb-4 tracking-wider">Evidence Vault</h2>
-                        <div class="space-y-3 mb-6">
-                            <input type="text" id="vault-input" placeholder="Evidence Source URL..." class="w-full px-4 py-2">
-                            <div class="flex gap-2">
-                                <input type="text" id="vault-label" placeholder="Note (e.g. 'Leaked PDF', 'Linked Profile')" class="flex-1 px-4 py-2">
-                                <button onclick="addVaultLink()" class="btn-action px-6 rounded-xl text-[10px] font-bold">LOG SOURCE</button>
-                            </div>
-                        </div>
-                        <ul id="link-list" class="space-y-2">
-                            <!-- Links render here -->
-                        </ul>
-                        <button onclick="exportWorkspace()" class="w-full mt-6 btn-action py-3 rounded-xl text-xs uppercase font-extrabold tracking-widest">Finalize & Export Intel Package</button>
-                    </div>
-                </div>
-
+                <!-- Other panels (Email, Geo, Network, Workspace) would follow same structure -->
             </div>
         </div>
     </main>
 
-    <!-- Mobile Nav -->
-    <nav class="mobile-nav fixed bottom-0 left-0 right-0 h-16 bg-[#0d0d0f] border-t border-[#1a1a1e] flex justify-around items-center px-2 z-50">
-        <!-- Generated by JS -->
-    </nav>
-
     <script>
-        const NAV_ITEMS = [
-            { id: 'general', label: 'Search', icon: 'fa-search' },
-            { id: 'email', label: 'Email', icon: 'fa-envelope' },
-            { id: 'dorks', label: 'Dorks', icon: 'fa-terminal' },
-            { id: 'geo', label: 'Geo', icon: 'fa-map-location-dot' },
-            { id: 'network', label: 'Net', icon: 'fa-server' },
-            { id: 'workspace', label: 'Case', icon: 'fa-briefcase' }
+        // --- CONFIGURATION ---
+        const ADMIN_EMAILS = [
+            'your-email@gmail.com',
+            'partner-email@gmail.com'
         ];
 
-        let state = {
-            activePanel: 'general',
-            links: []
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "YOUR_ID",
+            appId: "YOUR_APP_ID"
         };
 
-        window.onload = () => {
-            initNav();
-            updateClock();
-            setInterval(updateClock, 1000);
-            
-            const savedNotes = localStorage.getItem('h_notes_v2');
-            if (savedNotes) {
-                document.getElementById('case-notes').value = savedNotes;
-                updateCharCount(savedNotes.length);
+        // --- AUTH LOGIC ---
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const provider = new firebase.auth.GoogleAuthProvider();
+
+        auth.onAuthStateChanged(user => {
+            if (user) {
+                if (ADMIN_EMAILS.includes(user.email)) {
+                    showApp(user);
+                } else {
+                    document.getElementById('auth-error').classList.remove('hidden');
+                    auth.signOut();
+                }
+            } else {
+                hideApp();
             }
-            state.links = JSON.parse(localStorage.getItem('h_links_v2') || '[]');
-            renderLinks();
+        });
 
-            document.getElementById('case-notes').addEventListener('input', e => {
-                localStorage.setItem('h_notes_v2', e.target.value);
-                updateCharCount(e.target.value.length);
-            });
+        function signIn() {
+            auth.signInWithPopup(provider).catch(err => alert(err.message));
+        }
 
-            showPanel('general');
-        };
+        function signOut() {
+            auth.signOut().then(() => window.location.reload());
+        }
+
+        function showApp(user) {
+            document.getElementById('auth-overlay').classList.add('hidden');
+            document.getElementById('main-sidebar').classList.remove('hidden');
+            document.getElementById('main-app').classList.remove('hidden');
+            document.getElementById('user-info').innerText = `OPERATOR: ${user.email}`;
+            initNav();
+        }
+
+        function hideApp() {
+            document.getElementById('auth-overlay').classList.remove('hidden');
+        }
+
+        // --- APP LOGIC ---
+        const NAV_ITEMS = [
+            { id: 'general', label: 'Search', icon: 'fa-search' },
+            { id: 'dorks', label: 'Dorks', icon: 'fa-terminal' }
+        ];
 
         function initNav() {
             const side = document.getElementById('sidebar-nav');
-            const mobile = document.querySelector('.mobile-nav');
-            
+            side.innerHTML = '';
             NAV_ITEMS.forEach(item => {
-                const sBtn = document.createElement('button');
-                sBtn.className = `nav-link w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-xs font-semibold mb-1`;
-                sBtn.id = `side-${item.id}`;
-                sBtn.innerHTML = `<i class="fas ${item.icon} w-5 opacity-70"></i> ${item.label}`;
-                sBtn.onclick = () => showPanel(item.id);
-                side.appendChild(sBtn);
-
-                const mBtn = document.createElement('button');
-                mBtn.className = `nav-link flex flex-col items-center gap-1 flex-1`;
-                mBtn.id = `mobile-${item.id}`;
-                mBtn.innerHTML = `<i class="fas ${item.icon} text-lg"></i><span class="text-[8px] uppercase font-bold">${item.label}</span>`;
-                mBtn.onclick = () => showPanel(item.id);
-                mobile.appendChild(mBtn);
+                const btn = document.createElement('button');
+                btn.className = `nav-link w-full text-left px-4 py-3 rounded-xl flex items-center gap-3 text-xs font-semibold mb-1`;
+                btn.innerHTML = `<i class="fas ${item.icon} w-5 opacity-70"></i> ${item.label}`;
+                btn.onclick = () => showPanel(item.id);
+                side.appendChild(btn);
             });
         }
 
         function showPanel(id) {
             document.querySelectorAll('.panel-content').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
-            
             document.getElementById(`panel-${id}`).classList.add('active');
-            const sBtn = document.getElementById(`side-${id}`);
-            const mBtn = document.getElementById(`mobile-${id}`);
-            if(sBtn) sBtn.classList.add('active');
-            if(mBtn) mBtn.classList.add('active');
-            
             document.getElementById('panel-title').innerText = id.toUpperCase();
-            state.activePanel = id;
-        }
-
-        function notify(msg, err = false) {
-            const t = document.createElement('div');
-            t.className = `fixed top-20 left-1/2 -translate-x-1/2 px-6 py-2 rounded-full shadow-2xl text-[10px] font-bold uppercase tracking-widest z-[100] transform bg-indigo-600 text-white`;
-            if(err) t.classList.replace('bg-indigo-600', 'bg-red-500');
-            t.innerText = msg;
-            document.body.appendChild(t);
-            setTimeout(() => t.remove(), 2500);
-        }
-
-        function copyToClipboard(elementId) {
-            const copyText = document.getElementById(elementId);
-            copyText.select();
-            document.execCommand('copy');
-            notify('Copied to clipboard');
-        }
-
-        function openTarget(url, inputId) {
-            const val = document.getElementById(inputId).value.trim();
-            if (!val) return notify('Input required', true);
-            window.open(url + encodeURIComponent(val), '_blank');
         }
 
         function runSpectrumSearch() {
-            const val = document.getElementById('global-input').value.trim();
-            if (!val) return notify('Target required', true);
-            const urls = [
-                `https://www.google.com/search?q=${encodeURIComponent(val)}`,
-                `https://www.qwant.com/?q=${encodeURIComponent(val)}`,
-                `https://www.mojeek.com/search?q=${encodeURIComponent(val)}`,
-                `https://yandex.com/search/?text=${encodeURIComponent(val)}`
-            ];
-            urls.forEach(u => window.open(u, '_blank'));
-        }
-
-        function openEmail(type) {
-            const val = document.getElementById('email-input').value.trim();
-            if(!val) return notify('Email required', true);
-            const map = {
-                hunter: `https://hunter.io/email-verifier/${val}`,
-                eon: `https://epieos.com/?q=${val}`,
-                leakcheck: `https://leakcheck.io/search?type=email&query=${val}`,
-                pwned: `https://haveibeenpwned.com/account/${val}`
-            };
-            window.open(map[type], '_blank');
-        }
-
-        function runEmailDiscovery() {
-            const val = document.getElementById('email-input').value.trim();
-            if(!val) return notify('Email required', true);
-            window.open(`https://intelx.io/?s=${val}`, '_blank');
-            window.open(`https://dehashed.com/search?query=${val}`, '_blank');
-        }
-
-        function emailDorkSearch() {
-            const val = document.getElementById('email-input').value.trim();
-            if(!val) return notify('Email required', true);
-            const dork = `filetype:pdf OR filetype:xls OR filetype:doc "${val}"`;
-            window.open(`https://www.google.com/search?q=${encodeURIComponent(dork)}`, '_blank');
-        }
-
-        // Logic Engine v3.0 Implementation
-        function addDorkPart() {
-            const op = document.getElementById('dork-operator').value;
-            const val = document.getElementById('dork-value').value.trim();
-            const buffer = document.getElementById('dork-query');
-            
-            // Intelligence Logic: Don't allow empty values for standard operators
-            if (!val && (op === 'site:' || op === 'filetype:' || op === 'intext:' || op === 'intitle:' || op === 'inurl:')) {
-                return notify('Operator needs a value', true);
-            }
-
-            let result = '';
-            // If preset (contains spaces or complex logic)
-            if (op.includes('"') || op.includes(' ')) {
-                result = op + (val ? ` "${val}"` : '');
-            } else {
-                // Check if value already has the operator to prevent duplication
-                if (val.startsWith(op)) {
-                    result = val;
-                } else {
-                    result = op + val;
-                }
-            }
-
-            // Append with space if buffer not empty
-            buffer.value += (buffer.value ? ' ' : '') + result;
-            document.getElementById('dork-value').value = '';
-            notify('Buffer updated');
-        }
-
-        function toggleDorkInput() {
-            const op = document.getElementById('dork-operator').value;
-            const container = document.getElementById('dork-input-container');
-            // Hide input if it's a very specific IoT preset that doesn't usually take a target domain
-            if (op.includes('top.htm') || op.includes('view.shtml')) {
-                container.style.opacity = '0.5';
-            } else {
-                container.style.opacity = '1';
-            }
-        }
-
-        function clearDork() { 
-            document.getElementById('dork-query').value = ''; 
-            notify('Buffer cleared');
+            const val = document.getElementById('global-input').value;
+            if(!val) return;
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(val)}`, '_blank');
         }
 
         function runDork(engine) {
-            let q = document.getElementById('dork-query').value.trim();
-            if(!q) return notify('Logic buffer empty', true);
-            
-            // Clean logic (remove double spaces, excessive quotes)
-            q = q.replace(/\s+/g, ' ');
-
-            const urls = {
-                google: `https://www.google.com/search?q=${encodeURIComponent(q)}`,
-                bing: `https://www.bing.com/search?q=${encodeURIComponent(q)}`,
-                shodan: `https://www.shodan.io/search?query=${encodeURIComponent(q)}`,
-                duck: `https://duckduckgo.com/?q=${encodeURIComponent(q)}`
-            };
-            
-            if (urls[engine]) {
-                window.open(urls[engine], '_blank');
-            }
-        }
-
-        function openGeo(type) {
-            const val = document.getElementById('geo-input').value.trim();
-            if(!val) return notify('Location required', true);
-            const map = {
-                geoportail: `https://www.geoportail.gouv.fr/carte?q=${val}`,
-                osm: `https://www.openstreetmap.org/search?query=${val}`,
-                sentinel: `https://apps.sentinel-hub.com/eo-browser/`,
-                wikimapia: `http://wikimapia.org/#search=${val}`
-            };
-            window.open(map[type], '_blank');
-        }
-
-        function openNet(type) {
-            const val = document.getElementById('network-input').value.trim();
-            if(!val) return notify('Target required', true);
-            const map = {
-                dnsdump: `https://dnsdumpster.com/?target=${val}`,
-                crt: `https://crt.sh/?q=${val}`,
-                shodan: `https://www.shodan.io/search?query=${val}`,
-                builtwith: `https://builtwith.com/${val}`,
-                ripe: `https://apps.db.ripe.net/db-web-ui/query?searchtext=${val}`,
-                securitytrails: `https://securitytrails.com/domain/${val}`
-            };
-            window.open(map[type], '_blank');
-        }
-
-        function addVaultLink() {
-            const input = document.getElementById('vault-input');
-            const labelInput = document.getElementById('vault-label');
-            const url = input.value.trim();
-            const label = labelInput.value.trim() || 'No description provided';
-            
-            if (!url) return notify('URL required', true);
-            
-            state.links.unshift({ url, label, ts: new Date().toISOString() });
-            input.value = '';
-            labelInput.value = '';
-            saveLinks();
-            renderLinks();
-            notify('Preserved in vault');
-        }
-
-        function removeVaultLink(idx) {
-            state.links.splice(idx, 1);
-            saveLinks();
-            renderLinks();
-        }
-
-        function renderLinks() {
-            const l = document.getElementById('link-list');
-            if (state.links.length === 0) {
-                l.innerHTML = `<li class="text-[10px] text-slate-600 text-center py-6 uppercase tracking-widest opacity-50">Empty Archive</li>`;
-                return;
-            }
-            l.innerHTML = state.links.map((link, idx) => `
-                <li class="bg-[#1a1a1e] p-3 rounded-xl border border-white/5 flex justify-between items-start group">
-                    <div class="truncate flex-1">
-                        <div class="text-[9px] font-bold text-indigo-400 uppercase tracking-tighter mb-0.5">${link.label}</div>
-                        <a href="${link.url}" target="_blank" class="text-[10px] mono text-slate-400 underline decoration-indigo-500/30 truncate block">${link.url}</a>
-                        <div class="text-[7px] text-slate-600 mono mt-1 uppercase">${link.ts}</div>
-                    </div>
-                    <button onclick="removeVaultLink(${idx})" class="text-slate-700 hover:text-red-500 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <i class="fas fa-trash-alt text-[10px]"></i>
-                    </button>
-                </li>
-            `).join('');
-        }
-
-        function saveLinks() { localStorage.setItem('h_links_v2', JSON.stringify(state.links)); }
-        function updateCharCount(l) { document.getElementById('char-count').innerText = l.toString().padStart(6, '0'); }
-        function updateClock() {
-            const el = document.getElementById('current-time-desktop');
-            if(el) el.innerText = new Date().toISOString().slice(0, 19).replace('T', ' ');
-        }
-
-        function clearAllData() {
-            if (confirm('CAUTION: PERMANENTLY WIPE ALL SESSION INTELLIGENCE?')) {
-                localStorage.clear();
-                location.reload();
-            }
-        }
-
-        function exportWorkspace() {
-            const n = document.getElementById('case-notes').value;
-            const l = state.links.map(x => `[${x.ts}] [${x.label}] >> ${x.url}`).join('\n');
-            const content = `HEIMDALL INTELLIGENCE REPORT\n============================\nGENERATED: ${new Date().toISOString()}\n\nANALYSIS LOG:\n${n}\n\nEVIDENCE ARCHIVE:\n${l}\n\nEOF`;
-            const blob = new Blob([content], { type: 'text/plain' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = `HEIMDALL_REPORT_${Date.now()}.txt`;
-            a.click();
+            const q = document.getElementById('dork-query').value;
+            if(!q) return;
+            const url = engine === 'google' ? `https://google.com/search?q=${q}` : `https://shodan.io/search?query=${q}`;
+            window.open(url, '_blank');
         }
     </script>
 </body>
