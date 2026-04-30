@@ -149,7 +149,6 @@
                         </div>
                     </div>
                 </div>
-                <!-- Other panels (Email, Geo, Network, Workspace) would follow same structure -->
             </div>
         </div>
     </main>
@@ -157,17 +156,17 @@
     <script>
         // --- CONFIGURATION ---
         const ADMIN_EMAILS = [
-            'your-email@gmail.com',
-            'partner-email@gmail.com'
+            'USER_EMAIL_1@GMAIL.COM',
+            'USER_EMAIL_2@GMAIL.COM'
         ];
 
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT.appspot.com",
-            messagingSenderId: "YOUR_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "REDACTED_API_KEY",
+            authDomain: "REDACTED_PROJECT.firebaseapp.com",
+            projectId: "REDACTED_PROJECT",
+            storageBucket: "REDACTED_PROJECT.firebasestorage.app",
+            messagingSenderId: "REDACTED_ID",
+            appId: "REDACTED_APP_ID"
         };
 
         // --- AUTH LOGIC ---
@@ -177,7 +176,7 @@
 
         auth.onAuthStateChanged(user => {
             if (user) {
-                if (ADMIN_EMAILS.includes(user.email)) {
+                if (ADMIN_EMAILS.includes(user.email.toLowerCase())) {
                     showApp(user);
                 } else {
                     document.getElementById('auth-error').classList.remove('hidden');
@@ -241,7 +240,7 @@
         function runDork(engine) {
             const q = document.getElementById('dork-query').value;
             if(!q) return;
-            const url = engine === 'google' ? `https://google.com/search?q=${q}` : `https://shodan.io/search?query=${q}`;
+            const url = engine === 'google' ? `https://google.com/search?q=${encodeURIComponent(q)}` : `https://shodan.io/search?query=${encodeURIComponent(q)}`;
             window.open(url, '_blank');
         }
     </script>
